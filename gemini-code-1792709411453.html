@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYPERION NEXUS v2.5 - Sistema Avanzado de Telemetría</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Orbitron & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#070a12',
+                            card: 'rgba(15, 23, 42, 0.75)',
+                            border: 'rgba(56, 189, 248, 0.2)',
+                            blue: '#00f0ff',
+                            green: '#00ff66',
+                            yellow: '#ffb700',
+                            red: '#ff0055',
+                            purple: '#7000ff'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #05070e;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(112, 0, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 0% 100%, rgba(0, 240, 255, 0.1) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(13, 20, 36, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(0, 240, 255, 0.35);
+        }
+
+        .glow-blue {
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+        .text-glow-blue {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070a12;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+
+        @keyframes radar-sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .radar-sweeper {
+            animation: radar-sweep 4s linear infinite;
+            transform-origin: center;
+        }
+
+        .led-off {
+            background-color: rgba(30, 41, 59, 0.6);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+        .led-green {
+            background-color: #00ff66;
+            border-color: #a3ffc2;
+            box-shadow: 0 0 15px #00ff66, inset 0 0 8px #ffffff;
+        }
+        .led-yellow {
+            background-color: #ffb700;
+            border-color: #ffe89e;
+            box-shadow: 0 0 15px #ffb700, inset 0 0 8px #ffffff;
+        }
+        .led-red {
+            background-color: #ff0055;
+            border-color: #ff99bb;
+            box-shadow: 0 0 18px #ff0055, inset 0 0 8px #ffffff;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 10px;
+            cursor: pointer;
+            background: #0f172a;
+            border-radius: 5px;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -7px;
+            box-shadow: 0 0 15px #00f0ff;
+            border: 2px solid #ffffff;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-cyan-500 selection:text-black">
+
+    <!-- BANNER NEÓN DE ACCESO AL SIMULADOR 3D -->
+    <div class="bg-gradient-to-r from-cyan-950 via-cyan-900 to-purple-950 border-b border-cyan-400/40 text-cyan-300 py-2.5 px-4 text-center text-xs font-semibold flex items-center justify-center gap-3">
+        <span class="flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+        </span>
+        <span>ENTORNO 3D EN VIVO: Probar circuito interactivo en Arduino LAB</span>
+        <a href="https://arduino.aixenix.com/app/?s=_v7CBxQshTwt" target="_blank" class="px-3 py-1 bg-cyan-400 text-black font-orbitron font-bold rounded hover:bg-cyan-300 transition shadow-[0_0_12px_rgba(0,240,255,0.6)] text-[11px]">
+            <i class="fa-solid fa-cube mr-1"></i> ABRIR SIMULACIÓN
+        </a>
+    </div>
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-cyan-500/20 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="relative flex items-center justify-center w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-400/40">
+                    <i class="fa-solid fa-microchip text-cyan-400 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-extrabold text-lg md:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-500">
+                        HYPERION NEXUS <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">v2.5</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 tracking-widest uppercase">Sistema Avanzado de Telemetría Proximétrica</p>
+                </div>
+            </div>
+
+            <nav class="flex items-center space-x-1 sm:space-x-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                <button onclick="switchTab('simulator')" id="btn-simulator" class="tab-btn px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-cyan-400 bg-cyan-500/10 border border-cyan-500/30">
+                    <i class="fa-solid fa-radar mr-1.5"></i>Simulador Live
+                </button>
+                <button onclick="switchTab('specs')" id="btn-specs" class="tab-btn px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-list-check mr-1.5"></i>Especificaciones
+                </button>
+                <button onclick="switchTab('wiring')" id="btn-wiring" class="tab-btn px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-diagram-project mr-1.5"></i>Conexiones
+                </button>
+                <button onclick="switchTab('code')" id="btn-code" class="tab-btn px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-code mr-1.5"></i>Código C++
+                </button>
+                <button onclick="switchTab('team')" id="btn-team" class="tab-btn px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-user-gear mr-1.5"></i>Equipo
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- TAB 1: INTERACTIVE SIMULATOR & DASHBOARD -->
+        <section id="tab-simulator" class="tab-content space-y-8">
+            
+            <!-- TARJETA DESTACADA AL SIMULADOR 3D -->
+            <div class="glass-panel p-5 rounded-2xl border-2 border-cyan-500/40 bg-gradient-to-r from-slate-900/90 via-cyan-950/30 to-purple-950/40 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_0_25px_rgba(0,240,255,0.15)]">
+                <div class="flex items-center space-x-4">
+                    <div class="p-3.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-400/30 text-2xl">
+                        <i class="fa-solid fa-vr-cardboard"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-orbitron font-bold text-slate-100 text-base">Entorno 3D Interactiva en Tiempo Real</h3>
+                        <p class="text-xs text-slate-400">Accede directamente al montaje en Arduino LAB 3D con Arduino UNO, HC-SR04, 8 LEDs y Buzzer.</p>
+                    </div>
+                </div>
+                <a href="https://arduino.aixenix.com/app/?s=_v7CBxQshTwt" target="_blank" class="w-full md:w-auto px-6 py-3 bg-emerald-400 hover:bg-emerald-300 text-black font-orbitron font-black rounded-xl text-xs flex items-center justify-center gap-2 transition duration-200 shadow-[0_0_20px_rgba(0,255,102,0.5)] tracking-wider">
+                    <i class="fa-solid fa-play text-sm"></i> PROBAR SIMULACIÓN 3D
+                </a>
+            </div>
+
+            <!-- Hero Status Banner -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass-panel p-4 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                        <i class="fa-solid fa-wave-square text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Sensor Activo</div>
+                        <div class="font-orbitron text-sm font-bold text-slate-200">HC-SR04 Ultrasónico</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <i class="fa-solid fa-microchip text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Procesador Core</div>
+                        <div class="font-orbitron text-sm font-bold text-slate-200">ATmega328P @ 16MHz</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        <i class="fa-solid fa-arrows-left-right text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Rango de Operación</div>
+                        <div class="font-orbitron text-sm font-bold text-slate-200">2 cm — 200 cm</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <i class="fa-solid fa-volume-high text-2xl" id="audio-icon"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Telemetría Acústica</div>
+                        <div class="font-orbitron text-sm font-bold text-amber-400" id="audio-status">PWM Desactivado</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIMULATOR CORE GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- RADAR & DISTANCE DISPLAY -->
+                <div class="lg:col-span-7 glass-panel p-6 rounded-2xl flex flex-col justify-between space-y-6">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                            <h2 class="font-orbitron font-bold text-slate-100">Radar de Proximidad en Tiempo Real</h2>
+                        </div>
+                        <button id="toggle-audio-btn" onclick="toggleAudio()" class="px-3 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded-lg text-xs font-semibold flex items-center space-x-2 transition">
+                            <i class="fa-solid fa-volume-xmark"></i>
+                            <span>Activar Audio</span>
+                        </button>
+                    </div>
+
+                    <div class="relative w-full aspect-square max-w-[340px] mx-auto rounded-full bg-slate-950/80 border-2 border-cyan-500/30 flex items-center justify-center p-2 overflow-hidden shadow-2xl">
+                        <div class="absolute inset-4 rounded-full border border-cyan-500/20"></div>
+                        <div class="absolute inset-16 rounded-full border border-cyan-500/20"></div>
+                        <div class="absolute inset-28 rounded-full border border-cyan-500/20"></div>
+                        <div class="absolute inset-40 rounded-full border border-cyan-500/20"></div>
+
+                        <div class="absolute w-full h-[1px] bg-cyan-500/20"></div>
+                        <div class="absolute h-full w-[1px] bg-cyan-500/20"></div>
+
+                        <div class="absolute inset-0 radar-sweeper opacity-30">
+                            <div class="w-1/2 h-1/2 bg-gradient-to-br from-cyan-400 to-transparent rounded-tl-full"></div>
+                        </div>
+
+                        <div id="radar-target" class="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 border-2 border-white transition-all duration-150 shadow-[0_0_15px_#ff0055]" style="top: 50%; left: 50%;"></div>
+
+                        <div class="relative z-10 text-center pointer-events-none bg-slate-900/80 backdrop-blur-md p-4 rounded-full border border-slate-800">
+                            <div class="text-xs text-slate-400 uppercase tracking-widest font-semibold">Distancia</div>
+                            <div id="radar-distance-readout" class="font-orbitron text-3xl font-extrabold text-cyan-400 text-glow-blue">120 <span class="text-sm">cm</span></div>
+                            <div id="radar-zone-tag" class="text-[10px] font-orbitron font-bold mt-1 text-emerald-400 tracking-wider">ZONA SEGURA</div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-xs font-semibold">
+                            <span class="text-slate-400"><i class="fa-solid fa-sliders mr-1 text-cyan-400"></i> Simular Posición de Objeto</span>
+                            <span class="text-cyan-400 font-orbitron" id="slider-val-text">120 cm</span>
+                        </div>
+                        <input type="range" id="distance-slider" min="5" max="250" value="120" oninput="updateSimulation(this.value)" class="w-full">
+                        <div class="flex justify-between text-[10px] text-slate-500 font-orbitron">
+                            <span>5 cm (Peligro)</span>
+                            <span>100 cm</span>
+                            <span>250 cm (Sin Eco)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8-LED SPECTRAL VISUAL BAR -->
+                <div class="lg:col-span-5 glass-panel p-6 rounded-2xl flex flex-col justify-between space-y-6">
+                    <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
+                        <h2 class="font-orbitron font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-simple text-cyan-400"></i> Barra Espectral de 8 LEDs
+                        </h2>
+                        <span class="text-xs text-slate-400">Lógica Dinámica</span>
+                    </div>
+
+                    <div class="space-y-2.5 my-auto" id="led-bar-container">
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span id="led-indicator-7" class="w-4 h-4 rounded-full border led-off transition-all duration-200"></span>
+                                <span class="text-xs font-orbitron font-semibold text-slate-300">LED 8 (Rojo)</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">&le; 15 cm (Alerta Crítica)</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span id="led-indicator-6" class="w-4 h-4 rounded-full border led-off transition-all duration-200"></span>
+                                <span class="text-xs font-orbitron font-semibold text-slate-300">LED 7 (Rojo)</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">&le; 45 cm</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span id="led-indicator-5" class="w-4 h-4 rounded-full border led-off transition-all duration-200"></span>
+                                <span class="text-xs font-orbitron font-semibold text-slate-300">LED 6 (Amarillo)</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">&le; 75 cm</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span id="led-indicator-4" class="w-4 h-4 rounded-full border led-off transition-all duration-200"></span>
+                                <span class="text-xs font-orbitron font-semibold text-slate-300">LED 5 (Amarillo)</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">&le; 100 cm</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span id="led-indicator-3" class="w-4 h-4 rounded-full border led-off transition-all duration-200"></span>
+                                <span class="text-xs font-orbitron font-semibold text-slate-300">LED 4 (Verde)</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">&le; 125 cm</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span id="led-indicator-2" class="w-4 h-4 rounded-full border led-off transition-all duration-200"></span>
+                                <span class="text-xs font-orbitron font-semibold text-slate-300">LED 3 (Verde)</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">&le; 150 cm</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span id="led-indicator-1" class="w-4 h-4 rounded-full border led-off transition-all duration-200"></span>
+                                <span class="text-xs font-orbitron font-semibold text-slate-300">LED 2 (Verde)</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">&le; 175 cm</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span id="led-indicator-0" class="w-4 h-4 rounded-full border led-off transition-all duration-200"></span>
+                                <span class="text-xs font-orbitron font-semibold text-slate-300">LED 1 (Verde)</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">&le; 200 cm</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 font-mono text-xs space-y-1">
+                        <div class="text-slate-500 uppercase text-[10px] tracking-widest border-b border-slate-800 pb-1 mb-2 flex justify-between">
+                            <span>Consola Telemetría Serial</span>
+                            <span class="text-cyan-400">9600 BAUD</span>
+                        </div>
+                        <div class="text-slate-300" id="console-output">
+                            > [SYSTEM]: Inicializando módulos ultrasónicos...<br>
+                            > [STATUS]: Calibrando sensor HC-SR04 OK.<br>
+                            > [READING]: Distancia = 120 cm | LEDs Activos = 4/8
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: SPECIFICATIONS -->
+        <section id="tab-specs" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <h2 class="font-orbitron font-bold text-xl text-cyan-400 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group"></i> Arquitectura y Especificaciones del Sistema
+                </h2>
+                <p class="text-sm text-slate-400 mb-6">Detalles técnicos del diseño de hardware y principios físicos del HYPERION NEXUS v2.5.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 mb-4 text-xl">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Unidad de Procesamiento</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Basado en Arduino UNO R3 (Microcontrolador ATmega328P @ 16MHz). Procesa el pulso de eco del sensor y calcula la distancia con precisión en un ciclo continuo.</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-4 text-xl">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Sensor Ultrasónico HC-SR04</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Emite ráfagas ultrasónicas a 40 kHz. Mide el tiempo de retorno del eco. Rango calibrado de 2 cm a 200 cm con ángulo de apertura de 15°.</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 mb-4 text-xl">
+                            <i class="fa-solid fa-lightbulb"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Barra Espectral de 8 LEDs</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Matriz de 8 componentes ópticos (4 Verdes, 2 Amarillos, 2 Rojos). Lógica inversamente proporcional: conforme el objeto se acerca, más LEDs se encienden.</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 mb-4 text-xl">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Respuesta Acústica PWM</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Piezo Buzzer transductor calibrado por modulación PWM. Genera beeps progresivos y conmuta a tono continuo en zona crítica (&lt; 15 cm).</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 mb-4 text-xl">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Protección de Corriente</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Cada nodo emisor de luz está acoplado con una resistencia de limitación de 220 Ohmios, protegiendo los pines de salida del Arduino.</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 mb-4 text-xl">
+                            <i class="fa-solid fa-square-rss"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Telemetría Serial</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Transmisión de datos via interfaz UART Serial a 9600 Bauds, permitiendo monitoreo en tiempo real desde terminales externas.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: WIRING MAP & PINOUT TABLE -->
+        <section id="tab-wiring" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <h2 class="font-orbitron font-bold text-xl text-cyan-400 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-diagram-project"></i> Esquema Completo de Cableado y Mapeo de Pines
+                </h2>
+                <p class="text-sm text-slate-400 mb-6">Guía paso a paso para la conexión física de todos los componentes sobre la placa Arduino UNO R3.</p>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-800">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/90 text-cyan-400 font-orbitron text-xs tracking-wider uppercase border-b border-slate-800">
+                                <th class="p-3.5">Componente</th>
+                                <th class="p-3.5">Pin del Componente</th>
+                                <th class="p-3.5">Pin en Arduino UNO</th>
+                                <th class="p-3.5">Etapa / Función</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-xs font-mono text-slate-300">
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">Sensor HC-SR04</td>
+                                <td class="p-3.5">VCC</td>
+                                <td class="p-3.5 text-cyan-300">5V</td>
+                                <td class="p-3.5 text-slate-400">Alimentación principal (+5V)</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">Sensor HC-SR04</td>
+                                <td class="p-3.5">GND</td>
+                                <td class="p-3.5 text-cyan-300">GND</td>
+                                <td class="p-3.5 text-slate-400">Tierra común</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">Sensor HC-SR04</td>
+                                <td class="p-3.5">Trig (Disparo)</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 9</td>
+                                <td class="p-3.5 text-slate-400">Emisión de pulso ultrasónico</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">Sensor HC-SR04</td>
+                                <td class="p-3.5">Echo (Recepción)</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 8</td>
+                                <td class="p-3.5 text-slate-400">Recepción de tiempo de eco</td>
+                            </tr>
+
+                            <tr class="bg-slate-900/30 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-amber-400">Piezo Buzzer</td>
+                                <td class="p-3.5">Positivo (+)</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 3 (PWM)</td>
+                                <td class="p-3.5 text-slate-400">Generación de frecuencia de audio</td>
+                            </tr>
+                            <tr class="bg-slate-900/30 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-amber-400">Piezo Buzzer</td>
+                                <td class="p-3.5">Negativo (-)</td>
+                                <td class="p-3.5 text-cyan-300">GND</td>
+                                <td class="p-3.5 text-slate-400">Tierra común</td>
+                            </tr>
+
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">LED 1 (Verde)</td>
+                                <td class="p-3.5">Ánodo (+) con Resistencia 220Ω</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 2</td>
+                                <td class="p-3.5 text-slate-400">Activación &le; 200 cm</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">LED 2 (Verde)</td>
+                                <td class="p-3.5">Ánodo (+) con Resistencia 220Ω</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 4</td>
+                                <td class="p-3.5 text-slate-400">Activación &le; 175 cm</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">LED 3 (Verde)</td>
+                                <td class="p-3.5">Ánodo (+) con Resistencia 220Ω</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 5</td>
+                                <td class="p-3.5 text-slate-400">Activación &le; 150 cm</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">LED 4 (Verde)</td>
+                                <td class="p-3.5">Ánodo (+) con Resistencia 220Ω</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 6</td>
+                                <td class="p-3.5 text-slate-400">Activación &le; 125 cm</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-yellow-400">LED 5 (Amarillo)</td>
+                                <td class="p-3.5">Ánodo (+) con Resistencia 220Ω</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 7</td>
+                                <td class="p-3.5 text-slate-400">Activación &le; 100 cm</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-yellow-400">LED 6 (Amarillo)</td>
+                                <td class="p-3.5">Ánodo (+) con Resistencia 220Ω</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 10</td>
+                                <td class="p-3.5 text-slate-400">Activación &le; 75 cm</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-red-400">LED 7 (Rojo)</td>
+                                <td class="p-3.5">Ánodo (+) con Resistencia 220Ω</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 11</td>
+                                <td class="p-3.5 text-slate-400">Activación &le; 45 cm</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-red-400">LED 8 (Rojo)</td>
+                                <td class="p-3.5">Ánodo (+) con Resistencia 220Ω</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">Pin Digital 12</td>
+                                <td class="p-3.5 text-slate-400">Activación &le; 15 cm (Alerta Crítica)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: SOURCE CODE -->
+        <section id="tab-code" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                    <div>
+                        <h2 class="font-orbitron font-bold text-xl text-cyan-400 flex items-center gap-2">
+                            <i class="fa-solid fa-code"></i> Código Fuente Oficial (Arduino C++)
+                        </h2>
+                        <p class="text-sm text-slate-400">Firmware listo para compilar e implementar desde el IDE de Arduino.</p>
+                    </div>
+                    <button onclick="copySourceCode()" id="copy-btn" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-orbitron font-bold rounded-lg text-xs flex items-center gap-2 transition shadow-[0_0_15px_rgba(0,240,255,0.4)]">
+                        <i class="fa-regular fa-copy text-sm"></i>
+                        <span>Copiar Código</span>
+                    </button>
+                </div>
+
+                <div class="relative bg-slate-950 rounded-xl p-4 border border-slate-800 overflow-x-auto font-mono text-xs text-slate-300 leading-relaxed">
+<pre id="cpp-code-block"><code>/*
+ * ==============================================================================
+ * PROJECT: HYPERION NEXUS v2.5
+ * SYSTEM:  Advanced Proximity Detection & Telemetry System
+ * AUTHORS: Gleimer Arias, Jonny Carrisoza, Edwin Montiel, Miler Alarcón
+ * ==============================================================================
+ */
+
+const int PIN_TRIG = 9;
+const int PIN_ECHO = 8;
+const int PIN_BUZZER = 3;
+
+const int PINES_LEDS[] = {2, 4, 5, 6, 7, 10, 11, 12};
+const int TOTAL_LEDS = 8;
+const int UMBRALES[] = {200, 175, 150, 125, 100, 75, 45, 15};
+
+void setup() {
+  Serial.begin(9600);
+  
+  pinMode(PIN_TRIG, OUTPUT);
+  pinMode(PIN_ECHO, INPUT);
+  pinMode(PIN_BUZZER, OUTPUT);
+
+  for (int i = 0; i < TOTAL_LEDS; i++) {
+    pinMode(PINES_LEDS[i], OUTPUT);
+  }
+
+  Serial.println(F("[HYPERION NEXUS v2.5] - Sistema listo y operativo."));
+}
+
+float medirDistancia() {
+  digitalWrite(PIN_TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(PIN_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(PIN_TRIG, LOW);
+
+  long duracion = pulseIn(PIN_ECHO, HIGH, 30000); 
+  if (duracion == 0) return 400.0;
+
+  return (duracion * 0.0343) / 2.0;
+}
+
+void loop() {
+  float distancia = medirDistancia();
+
+  Serial.print(F("Distancia: "));
+  Serial.print(distancia);
+  Serial.println(F(" cm"));
+
+  int ledsEncendidos = 0;
+
+  for (int i = 0; i < TOTAL_LEDS; i++) {
+    if (distancia <= UMBRALES[i]) {
+      digitalWrite(PINES_LEDS[i], HIGH);
+      ledsEncendidos++;
+    } else {
+      digitalWrite(PINES_LEDS[i], LOW);
+    }
+  }
+
+  if (ledsEncendidos == TOTAL_LEDS) {
+    tone(PIN_BUZZER, 2300); 
+    delay(60);
+  } else if (ledsEncendidos > 0) {
+    int retardo = map((int)distancia, 15, 200, 40, 350);
+    tone(PIN_BUZZER, 1200, 30);
+    delay(retardo);
+  } else {
+    noTone(PIN_BUZZER);
+    delay(100);
+  }
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: TEAM ROSTER -->
+        <section id="tab-team" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <div class="text-center max-w-2xl mx-auto mb-8">
+                    <h2 class="font-orbitron font-extrabold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-500">
+                        UNIDAD DE INGENIERÍA HYPERION
+                    </h2>
+                    <p class="text-xs text-slate-400 tracking-wider uppercase mt-1">Equipo de Desarrollo & Especialistas de Hardware/Software</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 text-center hover:border-cyan-500/50 transition group">
+                        <div class="w-16 h-16 rounded-full bg-cyan-500/10 border-2 border-cyan-400/40 flex items-center justify-center text-cyan-400 mx-auto mb-4 text-2xl group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-code-merge"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-100 text-base">Gleimer Arias</h3>
+                        <p class="text-xs text-cyan-400 font-semibold mb-2">Firmware Architect</p>
+                        <p class="text-[11px] text-slate-400">Líder en arquitectura de firmware y algoritmos de filtrado de señal.</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 text-center hover:border-emerald-500/50 transition group">
+                        <div class="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-400/40 flex items-center justify-center text-emerald-400 mx-auto mb-4 text-2xl group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-100 text-base">Jonny Carrisoza</h3>
+                        <p class="text-xs text-emerald-400 font-semibold mb-2">Hardware Specialist</p>
+                        <p class="text-[11px] text-slate-400">Especialista en integración de circuitos y esquemas de cableado.</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 text-center hover:border-amber-500/50 transition group">
+                        <div class="w-16 h-16 rounded-full bg-amber-500/10 border-2 border-amber-400/40 flex items-center justify-center text-amber-400 mx-auto mb-4 text-2xl group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-100 text-base">Edwin Montiel</h3>
+                        <p class="text-xs text-amber-400 font-semibold mb-2">Sensors Analyst</p>
+                        <p class="text-[11px] text-slate-400">Analista de respuesta ultrasónica y calibración de umbrales.</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 text-center hover:border-purple-500/50 transition group">
+                        <div class="w-16 h-16 rounded-full bg-purple-500/10 border-2 border-purple-400/40 flex items-center justify-center text-purple-400 mx-auto mb-4 text-2xl group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-vial-circle-check"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-100 text-base">Miler Alarcón</h3>
+                        <p class="text-xs text-purple-400 font-semibold mb-2">System Testing Lead</p>
+                        <p class="text-[11px] text-slate-400">Diseñador de interfaces de usuario y control de calidad del sistema.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="glass-panel border-t border-cyan-500/20 px-4 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400">
+            <div>HYPERION NEXUS v2.5 &copy; 2026 — Proyecto de Detección Proximétrica.</div>
+            <div class="font-mono text-[11px] text-cyan-400">Gleimer Arias | Jonny Carrisoza | Edwin Montiel | Miler Alarcón</div>
+        </div>
+    </footer>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/30');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            activeBtn.classList.remove('text-slate-400');
+            activeBtn.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/30');
+        }
+
+        let audioCtx = null;
+        let audioEnabled = false;
+        let lastBeepTime = 0;
+
+        function toggleAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            audioEnabled = !audioEnabled;
+            const btn = document.getElementById('toggle-audio-btn');
+            const status = document.getElementById('audio-status');
+            const icon = document.getElementById('audio-icon');
+
+            if (audioEnabled) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                btn.innerHTML = `<i class="fa-solid fa-volume-high text-emerald-400"></i> <span>Audio Activo</span>`;
+                btn.classList.replace('bg-cyan-500/20', 'bg-emerald-500/20');
+                status.innerText = "PWM Activo (Audio ON)";
+                status.classList.replace('text-amber-400', 'text-emerald-400');
+                icon.classList.replace('text-amber-400', 'text-emerald-400');
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i> <span>Activar Audio</span>`;
+                btn.classList.replace('bg-emerald-500/20', 'bg-cyan-500/20');
+                status.innerText = "PWM Desactivado";
+                status.classList.replace('text-emerald-400', 'text-amber-400');
+                icon.classList.replace('text-emerald-400', 'text-amber-400');
+            }
+        }
+
+        function playBeep(frequency, duration) {
+            if (!audioEnabled || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) { console.error(e); }
+        }
+
+        const thresholds = [200, 175, 150, 125, 100, 75, 45, 15];
+        const ledTypes = ['green', 'green', 'green', 'green', 'yellow', 'yellow', 'red', 'red'];
+
+        function updateSimulation(distVal) {
+            const distance = parseInt(distVal);
+            document.getElementById('slider-val-text').innerText = `${distance} cm`;
+            document.getElementById('radar-distance-readout').innerHTML = `${distance} <span class="text-sm">cm</span>`;
+
+            const radarTarget = document.getElementById('radar-target');
+            const radarZoneTag = document.getElementById('radar-zone-tag');
+
+            const percent = Math.min(Math.max((distance - 5) / 245, 0), 1);
+            const radius = 10 + (percent * 110);
+            const angle = 45;
+            
+            const x = 50 + (radius / 1.7) * Math.cos(angle);
+            const y = 50 + (radius / 1.7) * Math.sin(angle);
+
+            radarTarget.style.left = `${x}%`;
+            radarTarget.style.top = `${y}%`;
+
+            let activeLeds = 0;
+            for (let i = 0; i < 8; i++) {
+                const ledElement = document.getElementById(`led-indicator-${i}`);
+                if (distance <= thresholds[i]) {
+                    ledElement.className = `w-4 h-4 rounded-full border led-${ledTypes[i]} transition-all duration-200`;
+                    activeLeds++;
+                } else {
+                    ledElement.className = `w-4 h-4 rounded-full border led-off transition-all duration-200`;
+                }
+            }
+
+            if (distance <= 15) {
+                radarZoneTag.innerText = "PELIGRO CRÍTICO";
+                radarZoneTag.className = "text-[10px] font-orbitron font-bold mt-1 text-red-500 animate-pulse tracking-wider";
+            } else if (distance <= 100) {
+                radarZoneTag.innerText = "ADVERTENCIA";
+                radarZoneTag.className = "text-[10px] font-orbitron font-bold mt-1 text-amber-400 tracking-wider";
+            } else if (distance <= 200) {
+                radarZoneTag.innerText = "ZONA SEGURA";
+                radarZoneTag.className = "text-[10px] font-orbitron font-bold mt-1 text-emerald-400 tracking-wider";
+            } else {
+                radarZoneTag.innerText = "FUERA DE RANGO";
+                radarZoneTag.className = "text-[10px] font-orbitron font-bold mt-1 text-slate-500 tracking-wider";
+            }
+
+            const consoleBox = document.getElementById('console-output');
+            consoleBox.innerHTML = `
+                > [ECHO PULSE]: Tiempo de retorno = ${(distance / 0.0343 * 2).toFixed(0)} us<br>
+                > [CALCULATED]: Distancia = ${distance} cm<br>
+                > [LED BAR]: ${activeLeds}/8 LEDs Activos | Estado = ${radarZoneTag.innerText}
+            `;
+
+            const now = Date.now();
+            if (activeLeds === 8) {
+                if (now - lastBeepTime > 70) {
+                    playBeep(2300, 0.06);
+                    lastBeepTime = now;
+                }
+            } else if (activeLeds > 0) {
+                const delayInterval = 40 + (distance / 200) * 310;
+                if (now - lastBeepTime > delayInterval) {
+                    playBeep(1200, 0.04);
+                    lastBeepTime = now;
+                }
+            }
+        }
+
+        function copySourceCode() {
+            const codeText = document.getElementById('cpp-code-block').innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = codeText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const copyBtn = document.getElementById('copy-btn');
+            copyBtn.innerHTML = `<i class="fa-solid fa-check text-sm"></i> <span>¡Copiado!</span>`;
+            copyBtn.classList.replace('bg-cyan-500', 'bg-emerald-500');
+
+            setTimeout(() => {
+                copyBtn.innerHTML = `<i class="fa-regular fa-copy text-sm"></i> <span>Copiar Código</span>`;
+                copyBtn.classList.replace('bg-emerald-500', 'bg-cyan-500');
+            }, 2000);
+        }
+
+        window.onload = function() {
+            updateSimulation(120);
+        };
+    </script>
+</body>
+</html>
